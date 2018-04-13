@@ -110,10 +110,10 @@ remove_setup() {
   s3_bucket=$1
   dns_k8s_cluster=$2
   echo -e "${GREEN}\tRemoving K8s Setup\n${NC}"
-  echo -e "${GREEN}\t--> Running terraform\n${NC}"
-  terraform_destroy;
   echo -e "${GREEN}\t--> Running kops\n${NC}"
   kops_remove_cluster;
+  echo -e "${GREEN}\t--> Running terraform\n${NC}"
+  terraform_destroy;
 }
 
 #Create or Remove the whole setup based on input argument
