@@ -1,0 +1,45 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    {{- include "wordpress.release_labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+  # indicate which strategy we want for rolling update
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        {{- include "wordpress.release_labels" . | indent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+            periodSeconds: 20
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: 30
+            timeoutSeconds: 1
+            periodSeconds: 10
+          env:
+          - name: WORDPRESS_DB_NAME
+            value: {{ .Values.WORDPRESS_DB_NAME }}
+          - name: WORDPRESS_DB_USER
+            value: {{ .Values.WORDPRESS_DB_USER }}
+          - name: WORDPRESS_DB_PASSWORD
+            value: {{ .Values.WORDPRESS_DB_PASSWORD }}
+          - name: WORDPRESS_DB_HOST
+            value: {{ .Values.WORDPRESS_DB_HOST }}

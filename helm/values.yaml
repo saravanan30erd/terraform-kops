@@ -1,0 +1,14 @@
+service:
+  type: LoadBalancer
+  targetPort: 80
+  servicePort: 80
+image:
+  repository: wordpress
+  tag: 4.8-apache
+replicaCount: 1
+
+#wordpress default values
+WORDPRESS_DB_HOST: localhost
+WORDPRESS_DB_USER: wordpress
+WORDPRESS_DB_PASSWORD: wordpress
+WORDPRESS_DB_NAME: wordpress
