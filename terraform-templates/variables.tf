@@ -10,7 +10,3 @@ variable "global_tags" {
     "Managed_By" = "Terraform"
   }
 }
-
-variable "multi_az_nat_gateway" {
-  default = false
-}
