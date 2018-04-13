@@ -25,10 +25,11 @@ fi
 #Requires AWS CLI, kops and Terraform
 kops version >/dev/null 2>&1 && \
 terraform version >/dev/null 2>&1 && \
-kubectl help >/dev/null 2>&1
+kubectl help >/dev/null 2>&1 && \
+which helm >/dev/null
 if [ $? != 0  ]
 then
-  echo -e "${RED}It requires AWS CLI, kops and terraform${NC}"
+  echo -e "${RED}Please install AWS CLI, kops, terraform and helm(just install binary)${NC}"
   exit 1
 fi
 
@@ -73,7 +74,8 @@ kops_create_cluster() {
     exit 1
   fi
   #It will take few minutes to create the cluster, until check the state
-  kops validate cluster >/dev/null 2>&1
+  kops validate cluster \
+  --state=s3://${s3_bucket} >/dev/null 2>&1
   while [ $? -ne 0 ]; do
     sleep 20
     echo "Validating kops cluster"
@@ -104,6 +106,8 @@ create_setup() {
   terraform_apply;
   echo -e "${GREEN}\t--> Running kops\n${NC}"
   kops_create_cluster;
+  echo -e "${GREEN}\t--> Installing helm/tiller in k8s cluster${NC}"
+  helm init
 }
 
 remove_setup() {

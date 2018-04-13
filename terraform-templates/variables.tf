@@ -1,6 +1,6 @@
 variable "project_name" {
   description = "Name of the project will be used to set prefix for resources name"
-  default = "saravanan-codetest"
+  default = "saravanan-wordpress"
 }
 
 variable "global_tags" {
@@ -9,4 +9,16 @@ variable "global_tags" {
   default = {
     "Managed_By" = "Terraform"
   }
+}
+
+variable "database_username" {
+  default = "wordpress"
+}
+
+variable "database_password" {
+  default = "wordpress"
+}
+
+variable "database_name" {
+  default = "wordpress"
 }
