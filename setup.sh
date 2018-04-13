@@ -23,7 +23,9 @@ AWS_ACCESS_KEY_ID ENV variables${NC}"
 fi
 
 #Requires AWS CLI, kops and Terraform
-aws --version >/dev/null 2>&1 && kops version >/dev/null 2>&1 && terraform version >/dev/null 2>&1
+kops version >/dev/null 2>&1 && \
+terraform version >/dev/null 2>&1 && \
+kubectl help >/dev/null 2>&1
 if [ $? != 0  ]
 then
   echo -e "${RED}It requires AWS CLI, kops and terraform${NC}"
@@ -41,6 +43,7 @@ terraform_apply() {
   fi
 }
 
+#By default, kops uses ~/.ssh/id_rsa.pub for ec2 key pair.
 kops_create_cluster() {
   kops create cluster \
   --cloud=aws \
@@ -49,7 +52,7 @@ kops_create_cluster() {
   --node-count=2 \
   --node-size=t2.micro \
   --master-size=t2.micro \
-  --vpc=${terraform output vpc_id} \
+  --vpc=$(terraform output vpc_id) \
   --name=${dns_k8s_cluster} \
   --state=s3://${s3_bucket} \
   --yes
@@ -61,7 +64,8 @@ kops_create_cluster() {
   #It will take few minutes to create the cluster, until check the state
   kops validate cluster >/dev/null 2>&1
   while [ $? -ne 0 ]; do
-    sleep 10
+    sleep 20
+    echo "Validating kops cluster"
     kops validate cluster >/dev/null 2>&1
   done
   echo -e "${YELLOW}\t--> kops completed${NC}"
