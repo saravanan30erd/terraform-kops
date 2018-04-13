@@ -43,6 +43,17 @@ terraform_apply() {
   fi
 }
 
+terraform_destroy() {
+  cd terraform-templates && terraform destroy
+  if [ $? != 0  ]
+  then
+    echo -e "${RED}\t--> terraform failed${NC}"
+    exit 1
+  else
+    echo -e "${YELLOW}\t--> terraform destroy completed${NC}"
+  fi
+}
+
 #By default, kops uses ~/.ssh/id_rsa.pub for ec2 key pair.
 kops_create_cluster() {
   kops create cluster \
@@ -58,7 +69,7 @@ kops_create_cluster() {
   --yes
   if [ $? != 0  ]
   then
-    echo -e "${RED}\t--> kops failed${NC}"
+    echo -e "${RED}\t--> kops create cluster failed${NC}"
     exit 1
   fi
   #It will take few minutes to create the cluster, until check the state
@@ -66,9 +77,23 @@ kops_create_cluster() {
   while [ $? -ne 0 ]; do
     sleep 20
     echo "Validating kops cluster"
-    kops validate cluster >/dev/null 2>&1
+    kops validate cluster \
+    --state=s3://${s3_bucket} >/dev/null 2>&1
   done
-  echo -e "${YELLOW}\t--> kops completed${NC}"
+  echo -e "${YELLOW}\t--> kops create cluster completed${NC}"
+}
+
+kops_remove_cluster() {
+  kops delete cluster \
+  --name=${dns_k8s_cluster} \
+  --state=s3://${s3_bucket} \
+  --yes
+  if [ $? != 0  ]
+  then
+    echo -e "${RED}\t--> kops delete cluster failed${NC}"
+    exit 1
+  fi
+  echo -e "${YELLOW}\t--> kops delete cluster completed${NC}"
 }
 
 create_setup() {
@@ -79,6 +104,16 @@ create_setup() {
   terraform_apply;
   echo -e "${GREEN}\t--> Running kops\n${NC}"
   kops_create_cluster;
+}
+
+remove_setup() {
+  s3_bucket=$1
+  dns_k8s_cluster=$2
+  echo -e "${GREEN}\tRemoving K8s Setup\n${NC}"
+  echo -e "${GREEN}\t--> Running terraform\n${NC}"
+  terraform_destroy;
+  echo -e "${GREEN}\t--> Running kops\n${NC}"
+  kops_remove_cluster;
 }
 
 #Create or Remove the whole setup based on input argument
