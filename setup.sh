@@ -139,6 +139,7 @@ helm_wordpress() {
     exit 1
   fi
   echo -e "${YELLOW}\t--> helm deployment for wordpress completed${NC}"
+  sleep 20;
   wordpress_url=$(kubectl get service wordpress -o jsonpath={.status.loadBalancer.ingress[0].hostname})
   echo -e "${GREEN}\tWORDPRESS SITE URL: ${YELLOW}${wordpress_url}${NC}"
   echo -e "${GREEN}\t Please note that newly created ELB DNS will take few minutes to resolve globally${NC}"
