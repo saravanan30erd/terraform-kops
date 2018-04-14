@@ -6,8 +6,11 @@ RED='\033[0;31m'
 NC='\033[0m'
 YELLOW='\033[0;33m'
 
-if [ $# != 3 ]
+if [[ $# == 3 || $# == 5 ]]
   then
+    :
+    exit 0
+  else
     echo -e "${RED}Incorrect Arguments Provided${NC}"
     echo -e "${GREEN}setup.sh <create> <s3-bucket> <dns-name-for-k8s-cluster> \
 <database-name> <database-username> <database-password>${NC}"
@@ -59,7 +62,24 @@ terraform_destroy() {
     echo -e "${YELLOW}\t--> terraform destroy completed${NC}"
   fi
 }
-
+kops_update_cluster() {
+  kops update cluster \
+  --cloud=aws \
+  --master-zones=eu-west-1a,eu-west-1b,eu-west-1c \
+  --zones=eu-west-1a,eu-west-1b,eu-west-1c \
+  --node-count=2 \
+  --node-size=t2.micro \
+  --master-size=t2.micro \
+  --vpc=$(terraform output vpc_id) \
+  --name=${dns_k8s_cluster} \
+  --state=s3://${s3_bucket} \
+  --yes
+  if [ $? != 0  ]
+  then
+    echo -e "${RED}\t--> kops update cluster failed${NC}"
+    exit 1
+  fi
+}
 #By default, kops uses ~/.ssh/id_rsa.pub for ec2 key pair.
 kops_create_cluster() {
   kops create cluster \
@@ -75,6 +95,8 @@ kops_create_cluster() {
   --yes
   if [ $? != 0  ]
   then
+    #if we run second time, kops create fails.
+    kops_update_cluster;
     echo -e "${RED}\t--> kops create cluster failed${NC}"
     exit 1
   fi
@@ -83,9 +105,9 @@ kops_create_cluster() {
   --state=s3://${s3_bucket} >/dev/null 2>&1
   while [ $? -ne 0 ]; do
     sleep 20
-    echo "Validating kops cluster"
+    echo "${GREEN}Validating kops cluster${NC}"
     kops validate cluster \
-    --state=s3://${s3_bucket} >/dev/null 2>&1
+    --state=s3://${s3_bucket}
   done
   echo -e "${YELLOW}\t--> kops create cluster completed${NC}"
 }
@@ -134,6 +156,7 @@ create_setup() {
   kops_create_cluster;
   echo -e "${GREEN}\t--> Installing helm/tiller in k8s cluster${NC}"
   helm init
+  sleep 10
   helm_wordpress;
 }
 
