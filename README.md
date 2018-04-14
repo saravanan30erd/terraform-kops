@@ -25,4 +25,4 @@ prerequisites
 
 Notes
 ------
-- For production, we should use private network and custom security groups for k8s nodes, persistent volumes or S3 for wordpress container.
+- For production, we should use private network and custom security groups for k8s nodes, persistent volumes or S3 for wordpress container and remote backend for terraform.

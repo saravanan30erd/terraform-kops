@@ -5,7 +5,7 @@ service:
 image:
   repository: wordpress
   tag: 4.8-apache
-replicaCount: 1
+replicaCount: 2
 
 #wordpress default values
 WORDPRESS_DB_HOST: localhost
