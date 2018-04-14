@@ -20,7 +20,7 @@ Steps
 prerequisites
 -------------
 - It requires AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID ENVIRONMENT variables.
-- Before run the setup script, please install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/), [kops](https://github.com/kubernetes/kops/blob/master/docs/install.md), [terraform](https://www.terraform.io/downloads.html) and [helm-v2.2.0](https://kubernetes-helm.storage.googleapis.com/helm-v2.2.0-linux-amd64.tar.gz) binaries.
+- Before run the setup script, please install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/), [kops-v1.8.0](https://github.com/kubernetes/kops/releases/download/1.8.0/kops-linux-amd64), [terraform](https://www.terraform.io/downloads.html) and [helm-v2.2.0](https://kubernetes-helm.storage.googleapis.com/helm-v2.2.0-linux-amd64.tar.gz) binaries.
 - By default, kops uses ~/.ssh/id_rsa.pub to create ec2 key pair for k8s nodes.
 
 Notes

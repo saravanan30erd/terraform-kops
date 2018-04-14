@@ -33,7 +33,7 @@ kubectl help >/dev/null 2>&1 && \
 which helm >/dev/null
 if [ $? != 0  ]
 then
-  echo -e "${RED}Please install kubectl, kops, terraform and helm-v2.2.0(just install binaries)${NC}"
+  echo -e "${RED}Please install kubectl, kops-v1.8.0, terraform and helm-v2.2.0(just install binaries)${NC}"
   exit 1
 fi
 
@@ -120,6 +120,11 @@ kops_remove_cluster() {
   echo -e "${YELLOW}\t--> kops delete cluster completed${NC}"
 }
 
+helm_init() {
+  echo -e "${GREEN}\t--> Configuring the helm and tiller${RC}"
+  helm init
+}
+
 helm_wordpress() {
   echo -e "${GREEN}\t--> Installing wordpress using helm\n${NC}"
   helm upgrade -i wordpress ../helm \
@@ -151,8 +156,8 @@ create_setup() {
   echo -e "${GREEN}\t--> Running kops\n${NC}"
   kops_create_cluster;
   echo -e "${GREEN}\t--> Installing helm/tiller in k8s cluster${NC}"
-  helm init
-  sleep 10
+  helm_init;
+  sleep 20
   helm_wordpress;
 }
 
