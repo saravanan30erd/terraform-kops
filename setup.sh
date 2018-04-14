@@ -9,7 +9,9 @@ YELLOW='\033[0;33m'
 if [ $# != 3 ]
   then
     echo -e "${RED}Incorrect Arguments Provided${NC}"
-    echo -e "${GREEN}setup.sh <create/remove> <s3-bucket> <dns-name-for-k8s-cluster>${NC}"
+    echo -e "${GREEN}setup.sh <create> <s3-bucket> <dns-name-for-k8s-cluster> \
+<database-name> <database-username> <database-password>${NC}"
+    echo -e "${GREEN}setup.sh <remove> <s3-bucket> <dns-name-for-k8s-cluster>${NC}"
     exit 1
 fi
 
@@ -34,7 +36,10 @@ then
 fi
 
 terraform_apply() {
-  cd terraform-templates && terraform init && terraform apply
+  cd terraform-templates && terraform init && \
+  terraform apply -var "database_username=${db_username}" \
+  -var "database_password=${db_password}" \
+  -var "database_name=${db_name}"
   if [ $? != 0  ]
   then
     echo -e "${RED}\t--> terraform failed${NC}"
@@ -98,9 +103,30 @@ kops_remove_cluster() {
   echo -e "${YELLOW}\t--> kops delete cluster completed${NC}"
 }
 
+helm_wordpress() {
+  echo -e "${GREEN}\t--> Installing wordpress using helm\n${NC}"
+  helm upgrade -i wordpress ./helm \
+  --set WORDPRESS_DB_HOST=$(terraform output rds_endpoint) \
+  --set WORDPRESS_DB_USER=${db_username} \
+  --set WORDPRESS_DB_PASSWORD=${db_password} \
+  --set WORDPRESS_DB_NAME=${db_name} \
+  --wait
+  if [ $? != 0  ]
+  then
+    echo -e "${RED}\t--> helm deployment for wordpress failed${NC}"
+    exit 1
+  fi
+  echo -e "${YELLOW}\t--> helm deployment for wordpress completed${NC}"
+  wordpress_url=$(kubectl get service wordpress -o jsonpath={.status.loadBalancer.ingress[0].hostname})
+  echo -e "${GREEN}\tWORDPRESS SITE URL: ${wordpress_url}${NC}"
+}
+
 create_setup() {
   s3_bucket=$1
   dns_k8s_cluster=$2
+  db_name=$3
+  db_username=$4
+  db_password=$5
   echo -e "${GREEN}\tCreating K8s Setup\n${NC}"
   echo -e "${GREEN}\t--> Running terraform\n${NC}"
   terraform_apply;
@@ -108,6 +134,7 @@ create_setup() {
   kops_create_cluster;
   echo -e "${GREEN}\t--> Installing helm/tiller in k8s cluster${NC}"
   helm init
+  helm_wordpress;
 }
 
 remove_setup() {
@@ -123,7 +150,7 @@ remove_setup() {
 #Create or Remove the whole setup based on input argument
 if [ "$1" == "create" ]
 then
-  create_setup $2 $3;
+  create_setup $2 $3 $4 $5 $6;
 elif [ "$1" == "remove" ]
 then
   remove_setup $2 $3;
