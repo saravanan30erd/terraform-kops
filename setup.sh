@@ -33,7 +33,7 @@ kubectl help >/dev/null 2>&1 && \
 which helm >/dev/null
 if [ $? != 0  ]
 then
-  echo -e "${RED}Please install kubectl, kops, terraform and helm(just install binaries)${NC}"
+  echo -e "${RED}Please install kubectl, kops, terraform and helm-v2.2.0(just install binaries)${NC}"
   exit 1
 fi
 
