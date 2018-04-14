@@ -6,10 +6,9 @@ RED='\033[0;31m'
 NC='\033[0m'
 YELLOW='\033[0;33m'
 
-if [[ $# == 3 || $# == 5 ]]
+if [[ $# == 3 || $# == 6 ]]
   then
     :
-    exit 0
   else
     echo -e "${RED}Incorrect Arguments Provided${NC}"
     echo -e "${GREEN}setup.sh <create> <s3-bucket> <dns-name-for-k8s-cluster> \
@@ -27,14 +26,14 @@ AWS_ACCESS_KEY_ID ENV variables${NC}"
   exit 1
 fi
 
-#Requires AWS CLI, kops and Terraform
+#Requires kubectl, kops and Terraform
 kops version >/dev/null 2>&1 && \
 terraform version >/dev/null 2>&1 && \
 kubectl help >/dev/null 2>&1 && \
 which helm >/dev/null
 if [ $? != 0  ]
 then
-  echo -e "${RED}Please install AWS CLI, kops, terraform and helm(just install binary)${NC}"
+  echo -e "${RED}Please install kubectl, kops, terraform and helm(just install binaries)${NC}"
   exit 1
 fi
 
@@ -64,21 +63,8 @@ terraform_destroy() {
 }
 kops_update_cluster() {
   kops update cluster \
-  --cloud=aws \
-  --master-zones=eu-west-1a,eu-west-1b,eu-west-1c \
-  --zones=eu-west-1a,eu-west-1b,eu-west-1c \
-  --node-count=2 \
-  --node-size=t2.micro \
-  --master-size=t2.micro \
-  --vpc=$(terraform output vpc_id) \
   --name=${dns_k8s_cluster} \
-  --state=s3://${s3_bucket} \
-  --yes
-  if [ $? != 0  ]
-  then
-    echo -e "${RED}\t--> kops update cluster failed${NC}"
-    exit 1
-  fi
+  --state=s3://${s3_bucket}
 }
 #By default, kops uses ~/.ssh/id_rsa.pub for ec2 key pair.
 kops_create_cluster() {
@@ -97,8 +83,10 @@ kops_create_cluster() {
   then
     #if we run second time, kops create fails.
     kops_update_cluster;
+    if [ $? != 0  ]; then
     echo -e "${RED}\t--> kops create cluster failed${NC}"
     exit 1
+    fi
   fi
   #It will take few minutes to create the cluster, until check the state
   kops validate cluster \
@@ -127,7 +115,7 @@ kops_remove_cluster() {
 
 helm_wordpress() {
   echo -e "${GREEN}\t--> Installing wordpress using helm\n${NC}"
-  helm upgrade -i wordpress ./helm \
+  helm upgrade -i wordpress ../helm \
   --set WORDPRESS_DB_HOST=$(terraform output rds_endpoint) \
   --set WORDPRESS_DB_USER=${db_username} \
   --set WORDPRESS_DB_PASSWORD=${db_password} \
@@ -140,7 +128,8 @@ helm_wordpress() {
   fi
   echo -e "${YELLOW}\t--> helm deployment for wordpress completed${NC}"
   wordpress_url=$(kubectl get service wordpress -o jsonpath={.status.loadBalancer.ingress[0].hostname})
-  echo -e "${GREEN}\tWORDPRESS SITE URL: ${wordpress_url}${NC}"
+  echo -e "${GREEN}\tWORDPRESS SITE URL: ${YELLOW}${wordpress_url}${NC}"
+  echo -e "${GREEN}\t Please note that newly created ELB DNS will take few minutes to resolve globally${NC}"
 }
 
 create_setup() {
