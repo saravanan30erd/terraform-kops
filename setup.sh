@@ -6,6 +6,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 YELLOW='\033[0;33m'
 
+######### Verify Requirements ##########
 if [[ $# == 3 || $# == 6 ]]
   then
     :
@@ -16,7 +17,6 @@ if [[ $# == 3 || $# == 6 ]]
     echo -e "${GREEN}setup.sh <remove> <s3-bucket> <dns-name-for-k8s-cluster>${NC}"
     exit 1
 fi
-
 
 #Requires AWS credentials
 if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]
@@ -36,6 +36,13 @@ then
   echo -e "${RED}Please install kubectl, kops, terraform and helm(just install binaries)${NC}"
   exit 1
 fi
+
+#By default, kops uses ~/.ssh/id_rsa.pub for ec2 key pair.
+if [ ! -f ~/.ssh/id_rsa.pub ]; then
+    echo -e "${RED}Please create ssh key pair in ~/.ssh/id_rsa.pub for kops${NC}"
+    exit 1
+fi
+###########################
 
 terraform_apply() {
   cd terraform-templates && terraform init && \
@@ -66,7 +73,7 @@ kops_update_cluster() {
   --name=${dns_k8s_cluster} \
   --state=s3://${s3_bucket}
 }
-#By default, kops uses ~/.ssh/id_rsa.pub for ec2 key pair.
+
 kops_create_cluster() {
   kops create cluster \
   --cloud=aws \
@@ -93,9 +100,9 @@ kops_create_cluster() {
   --state=s3://${s3_bucket} >/dev/null 2>&1
   while [ $? -ne 0 ]; do
     sleep 20
-    echo "${GREEN}Validating kops cluster${NC}"
+    echo -e "${GREEN}Validating kops cluster${NC}"
     kops validate cluster \
-    --state=s3://${s3_bucket}
+    --state=s3://${s3_bucket} >/dev/null 2>&1
   done
   echo -e "${YELLOW}\t--> kops create cluster completed${NC}"
 }
